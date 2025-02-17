@@ -11,7 +11,8 @@ class TwoTowerNetwork(lightning.LightningModule):
   The final prediction is computed by taking the dot product of the two tower
   outputs.
 
-  Attributes:
+  Attributes
+  ----------
       user_tower: The user tower neural network.
       item_tower: The item tower neural network.
   """
@@ -133,7 +134,8 @@ class TwoTowerNetwork(lightning.LightningModule):
     Args:
         batch: A tuple of three tensors: user features, item features, and ratings.
 
-    Returns:
+    Returns
+    -------
         torch.Tensor: The loss for the current batch.
     """
     user_features, item_features, rating = batch
