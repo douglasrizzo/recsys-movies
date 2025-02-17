@@ -142,7 +142,11 @@ class TwoTowerNetwork(lightning.LightningModule):
     y_hat = self.forward(user_features, item_features)
     return nn.functional.mse_loss(y_hat, rating), (y_hat - rating).abs().mean()
 
-  def training_step(self, batch: tuple[torch.Tensor, torch.Tensor, torch.Tensor], batch_idx: int) -> torch.Tensor:
+  def training_step(
+    self,
+    batch: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+    batch_idx: int,  # noqa: ARG002
+  ) -> torch.Tensor:
     """Compute the loss for the given batch.
 
     Parameters
@@ -165,7 +169,7 @@ class TwoTowerNetwork(lightning.LightningModule):
   def validation_step(
     self,
     batch: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
-    batch_idx: int,
+    batch_idx: int,  # noqa: ARG002
   ) -> torch.Tensor:
     """Compute the loss for the given batch.
 
@@ -194,4 +198,14 @@ class TwoTowerNetwork(lightning.LightningModule):
     torch.optim.Adam
         The optimizer for training the model.
     """
-    return torch.optim.Adam(self.parameters(), lr=(self.lr or self.learning_rate))
+    optimizer = torch.optim.Adam(self.parameters(), lr=(self.lr or self.learning_rate))
+    return {
+      "optimizer": optimizer,
+      "lr_scheduler": {
+        "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min"),
+        "monitor": "Loss/MSE Val",
+        # "frequency": "indicates how often the metric is updated",
+        # If "monitor" references validation metrics, then "frequency" should be set to a
+        # multiple of "trainer.check_val_every_n_epoch".
+      },
+    }
