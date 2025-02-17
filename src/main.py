@@ -103,20 +103,23 @@ def objective(
 
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser()
-  parser.add_argument_group("Training")
-  parser.add_argument("-b", "--batch-size", type=int, default=256)
-  parser.add_argument("-e", "--epochs", type=int, default=10)
-  parser.add_argument("-v", "--val-check-interval", type=float, default=1 / 100)
-  parser.add_argument("-p", "--precision", type=str, default="16-mixed")
-  parser.add_argument("-l", "--limit-val-batches", type=float, default=50)
-  parser.add_argument("-r", "--lr", type=float, default=1e-3)
-  parser.add_argument("-t", "--train-workers", type=int, default=4)
-  parser.add_argument("-w", "--val-workers", type=int, default=1)
-  parser.add_argument("-s", "--sample-frac", type=float, default=1.0)
-  parser.add_argument_group("Optuna")
-  parser.add_argument("-o", "--optuna", action="store_true", help="Activate the optuna feature.")
-  parser.add_argument(
+  parser = argparse.ArgumentParser(
+    description="Train a two-tower neural network for user-item recommendation.",
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+  )
+  g = parser.add_argument_group("Training")
+  g.add_argument("-b", "--batch-size", type=int, default=256)
+  g.add_argument("-e", "--epochs", type=int, default=10)
+  g.add_argument("-v", "--val-check-interval", type=float, default=1 / 100)
+  g.add_argument("-p", "--precision", type=str, default="16-mixed")
+  g.add_argument("-l", "--limit-val-batches", type=float, default=50)
+  g.add_argument("-r", "--lr", type=float, default=1e-3)
+  g.add_argument("-t", "--train-workers", type=int, default=4)
+  g.add_argument("-w", "--val-workers", type=int, default=1)
+  g.add_argument("-s", "--sample-frac", type=float, default=1.0)
+  g = parser.add_argument_group("Optuna")
+  g.add_argument("-o", "--optuna", action="store_true", help="Activate the optuna feature.")
+  g.add_argument(
     "-P",
     "--pruning",
     action="store_true",
