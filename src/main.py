@@ -99,6 +99,7 @@ def objective(
   hyperparameters = {"n_layers": n_layers, "dropout": dropout, "output_dims": output_dims}
   trainer.logger.log_hyperparams(hyperparameters)
   trainer.fit(model=model, datamodule=datamodule)
+  wandb_logger.experiment.finish()
   return trainer.callback_metrics["Loss/MSE Val"].item()
 
 
