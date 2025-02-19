@@ -22,7 +22,7 @@ class UserItemDataset(Dataset):
   datasets. The dataset is used to train a two-tower neural network.
   """
 
-  def __init(
+  def __init__(
     self,
     items_path: str,
     users_path: str,
