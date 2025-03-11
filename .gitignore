@@ -18,3 +18,8 @@ wandb/
 recsys-movies/
 .lr_find*.ckpt
 .scale_batch_size*.ckpt
+
+# Prettify
+node_modules/
+package-lock.json
+package.json
