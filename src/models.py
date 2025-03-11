@@ -22,6 +22,7 @@ class TwoTowerNetwork(lightning.LightningModule):
     output_dims: list[int] | None = None,
     dropout: float = 0.5,
     lr: float = 1e-3,
+    optimizer: str = "Adam",
   ) -> None:
     """Initialize a two-tower neural network for user-item recommendation.
 
@@ -39,6 +40,8 @@ class TwoTowerNetwork(lightning.LightningModule):
         The dropout probability. The default is 0.5.
     lr : float, optional
         The learning rate. The default is 1e-3.
+    optimizer : str, optional
+        The optimizer to use. The default is "Adam".
     """
     if output_dims is None:
       output_dims = [64, 32]
@@ -49,6 +52,7 @@ class TwoTowerNetwork(lightning.LightningModule):
     self.item_tower = self.make_tower(dropout, output_dims)
 
     self.lr = lr
+    self.optim_name = optimizer
 
   @staticmethod
   def make_tower(dropout: float, output_dims: list[int]) -> nn.Sequential:
@@ -162,8 +166,8 @@ class TwoTowerNetwork(lightning.LightningModule):
         The loss for the current batch.
     """
     mse, mae = self.compute_loss(batch)
-    self.log("Loss/MSE Train", mse)
-    self.log("Loss/MAE Train", mae)
+    self.log("Loss/MSE Train", mse.item())
+    self.log("Loss/MAE Train", mae.item())
     return mse
 
   def validation_step(
@@ -186,8 +190,8 @@ class TwoTowerNetwork(lightning.LightningModule):
         The loss for the current batch.
     """
     mse, mae = self.compute_loss(batch)
-    self.log("Loss/MSE Val", mse)
-    self.log("Loss/MAE Val", mae)
+    self.log("Loss/MSE Val", mse.item())
+    self.log("Loss/MAE Val", mae.item())
     return mse
 
   def configure_optimizers(self) -> torch.optim.Adam:
@@ -198,7 +202,8 @@ class TwoTowerNetwork(lightning.LightningModule):
     torch.optim.Adam
         The optimizer for training the model.
     """
-    optimizer = torch.optim.Adam(self.parameters(), lr=(self.lr or self.learning_rate))
+    optimizer = torch.optim.Adam if self.optim_name == "Adam" else torch.optim.SGD
+    optimizer = optimizer(self.parameters(), lr=(self.lr or self.learning_rate))
     return {
       "optimizer": optimizer,
       "lr_scheduler": {

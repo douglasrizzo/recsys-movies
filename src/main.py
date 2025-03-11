@@ -1,10 +1,12 @@
 import argparse
+import gc
+import logging
 from functools import partial
 from os import urandom
 
 import lightning
 import optuna
-from lightning.pytorch.callbacks import LearningRateMonitor
+from lightning.pytorch.callbacks import Callback, LearningRateMonitor
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks.progress.rich_progress import RichProgressBar
 from lightning.pytorch.loggers import WandbLogger
@@ -15,11 +17,23 @@ from data import UserItemDataModule
 from models import TwoTowerNetwork
 
 
+class MyCustomCallback(Callback):
+  def on_train_epoch_end(self, *args, **kwargs):
+    gc.collect()
+
+  def on_validation_epoch_end(self, *args, **kwargs):
+    gc.collect()
+
+
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+
+
 def objective(
   trial: Trial | None,
   train_workers: int,
   val_workers: int,
   batch_size: int,
+  optimizer: str,
   learning_rate: float,
   precision: str | int,
   val_check_interval: float | int,
@@ -35,6 +49,7 @@ def objective(
   trial (Trial | None): The Optuna trial. If None, it will use the default hyperparameters.
   train_workers (int): The number of workers for the training DataModule.
   val_workers (int): The number of workers for the validation DataModule.
+  optimizer (str): The optimizer to use.
   batch_size (int): The batch size.
   learning_rate (float): The learning rate.
   precision (str | int): The precision to use.
@@ -58,6 +73,7 @@ def objective(
       EarlyStopping(monitor="Loss/MSE Val", mode="min"),
       LearningRateMonitor(logging_interval="step"),
       RichProgressBar(),
+      MyCustomCallback(),
     ]
   else:
     output_dims = [64, 32]
@@ -79,7 +95,7 @@ def objective(
     batch_size=batch_size,
     sample_frac=sample_frac,
   )
-  model = TwoTowerNetwork(output_dims=output_dims, dropout=dropout, lr=learning_rate)
+  model = TwoTowerNetwork(output_dims=output_dims, dropout=dropout, lr=learning_rate, optimizer=optimizer)
   wandb_logger = WandbLogger(
     project="recsys-movies",
     name=f"{run_name}-{trial.number}" if trial is not None else None,
@@ -118,8 +134,9 @@ if __name__ == "__main__":
   g.add_argument("-t", "--train-workers", type=int, default=4)
   g.add_argument("-w", "--val-workers", type=int, default=1)
   g.add_argument("-s", "--sample-frac", type=float, default=1.0)
+  g.add_argument("-o", "--optimizer", type=str, default="Adam", choices=["Adam", "SGD"])
   g = parser.add_argument_group("Optuna")
-  g.add_argument("-o", "--optuna", action="store_true", help="Activate the optuna feature.")
+  g.add_argument("-O", "--optuna", action="store_true", help="Activate the optuna feature.")
   g.add_argument(
     "-P",
     "--pruning",
@@ -133,6 +150,7 @@ if __name__ == "__main__":
     train_workers=args.train_workers,
     val_workers=args.val_workers,
     batch_size=args.batch_size,
+    optimizer=args.optimizer,
     learning_rate=args.lr,
     precision=args.precision,
     val_check_interval=args.val_check_interval,
