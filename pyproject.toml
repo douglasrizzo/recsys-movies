@@ -9,6 +9,7 @@ dependencies = [
     "ipywidgets>=8.1.5",
     "kagglehub>=0.3.5",
     "lightning[extra]>=2.5.0.post0",
+    "matplotlib-venn>=1.1.2",
     "matplotlib>=3.10.0",
     "numpy<2",
     "optuna>=4.1.0",
@@ -23,4 +24,8 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["ipykernel>=6.29.5"]
+dev = [
+    "ipykernel>=6.29.5",
+    "pre-commit>=4.2.0",
+    "ruff>=0.11.0",
+]

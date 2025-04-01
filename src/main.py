@@ -18,10 +18,10 @@ from models import TwoTowerNetwork
 
 
 class MyCustomCallback(Callback):
-  def on_train_epoch_end(self, *args, **kwargs):
+  def on_train_epoch_end(self, *args, **kwargs) -> None:
     gc.collect()
 
-  def on_validation_epoch_end(self, *args, **kwargs):
+  def on_validation_epoch_end(self, *args, **kwargs) -> None:
     gc.collect()
 
 

@@ -66,12 +66,12 @@ def solve_sparse_feature(
       Concentration of the total number of values to represent with the
       grouped feature. Default is 0.9.
 
-  Returns:
+  Returns
   -------
   pandas.DataFrame
       DataFrame with the grouped feature column.
   """
-  fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+  _fig, axes = plt.subplots(1, 2, figsize=(12, 6))
   feat_count = df_to_count[feat_col].value_counts(normalize=True).sort_values(ascending=False)
   feat_count.plot.pie(autopct="%1.1f%%", ax=axes[0])
   feat_cumsum = feat_count.cumsum()
@@ -106,7 +106,7 @@ def generate_movie_features(movies_path: str, links_path: str, tmdb_path: str, o
   output_path : str
       Directory path where the output features and normalization file will be saved.
 
-  Returns:
+  Returns
   -------
   pd.DataFrame
       A DataFrame containing the processed movie features.
@@ -161,7 +161,21 @@ def generate_movie_features(movies_path: str, links_path: str, tmdb_path: str, o
     "release_year",
   ])
 
-  def max_days_in_month(year, month):
+  def max_days_in_month(year: int, month: int) -> int:
+    """
+    Calculate the maximum number of days in a given month of a specific year.
+
+    Parameters
+    ----------
+    year : int
+      The year as a four-digit integer (e.g., 2023).
+    month : int
+      The month as an integer (1 for January, 12 for December).
+
+    Returns
+    -------
+      int: The maximum number of days in the specified month of the given year.
+    """
     return monthrange(year, month)[1]
 
   max_days = movie_features.apply(
@@ -229,7 +243,61 @@ def generate_user_features(
   movie_features_path: str,
   output_path: str,
 ) -> pd.DataFrame:
-  """Generate and save user features."""
+  """
+  Generate and save user features based on movie ratings, tags, and metadata.
+
+  This function processes user interactions with movies (ratings and tags) and combines them
+  with movie metadata (genres, release year, budget, runtime, etc.) to generate a comprehensive
+  set of features for each user. The resulting features are saved to a specified output directory
+  in Parquet format, along with a list of features that require normalization.
+
+  Parameters
+  ----------
+  ratings_path : str
+      Path to the CSV file containing user ratings for movies.
+      Expected columns: ['userId', 'movieId', 'rating'].
+  tags_path : str
+      Path to the CSV file containing user tags for movies.
+      Expected columns: ['userId', 'movieId', 'tag'].
+  links_path : str
+      Path to the CSV file containing movie links to external databases.
+      Expected columns: ['movieId', 'tmdbId'].
+  tmdb_path : str
+      Path to the CSV file containing movie metadata from TMDB.
+      Expected columns: ['id', 'release_date', 'budget', 'runtime',
+      'vote_average', 'popularity', 'original_language'].
+  movie_features_path : str
+      Path to the Parquet file containing precomputed movie features,
+      such as genres. Expected columns: ['genre_*'].
+  output_path : str
+      Directory where the generated user features and normalization metadata
+      will be saved. The directory will be created if it does not exist.
+
+  Returns
+  -------
+  pd.DataFrame
+      A DataFrame containing the generated user features, indexed by user ID.
+
+  Features Generated
+  ------------------
+  - Aggregated genre counts for each user based on the movies they interacted with.
+  - Statistical metrics (mean and standard deviation) for movie metadata such as release year,
+    budget, runtime, vote average, and popularity, aggregated per user.
+  - Average genre scores weighted by user ratings.
+  - Sparse features for the original language of movies interacted with by each user.
+
+  Outputs
+  -------
+  - A Parquet file named 'user_features.parquet' containing the user features.
+  - A text file named 'user_features_to_normalize.txt' listing the features that require
+    normalization.
+
+  Notes
+  -----
+  - The function ensures that all intermediate DataFrames are downcast to reduce memory usage.
+  - Missing values are dropped from the final user features DataFrame.
+  - The index of the output DataFrame is renamed to 'id' for consistency.
+  """
   ratings = downcast(pd.read_csv(ratings_path))
   tags = downcast(pd.read_csv(tags_path))
   user_movies = pd.concat([ratings[["userId", "movieId"]], tags[["userId", "movieId"]]]).drop_duplicates()
@@ -283,18 +351,19 @@ def generate_user_features(
     "popularity",
   ]
 
-  orelha = (
+  # TODO(dodo): Check this
+  aggregated_user_stats = (
     user_movie_genre_scores[cols_to_avg]
     .groupby(level=0)
     .agg(["mean", "std"])
-    .stack(level=0)
-    .rename_axis(["userId", "metric"])
-    .unstack()
+    .reset_index()
+    .melt(id_vars="userId", var_name="metric", value_name="value")
+    .pivot_table(index="userId", columns="metric", values="value")
   )
-  orelha.columns = [f"{agg}_{c}" for c in cols_to_avg for agg in ["mean", "std"]]
+  aggregated_user_stats.columns = [f"{agg}_{c}" for c in cols_to_avg for agg in ["mean", "std"]]
   user_features = downcast(
     user_features.merge(
-      orelha,
+      aggregated_user_stats,
       left_index=True,
       right_index=True,
     )
@@ -340,7 +409,7 @@ def visualize_feature_variance(movies_path: str, users_path: str) -> None:
   """Visualize feature variance in both datasets using PCA."""
   movies_df = pd.read_parquet(movies_path)
   users_df = pd.read_parquet(users_path)
-  fig, axes = plt.subplots(2, 1, figsize=(20, 10))
+  _fig, axes = plt.subplots(2, 1, figsize=(20, 10))
 
   pca = PCA()
 
@@ -360,8 +429,14 @@ def generate_ratings_file(input_path: str, output_path: str) -> None:
   ]).to_parquet(pl.Path(output_path) / "ratings.parquet")
 
 
-def main():
-  links_path, genometags_path, movies_path, genomescores_path, tags_path, ratings_path, tmdb_path = (
+def main() -> None:
+  """Orchestrate the downloading and processing of datasets.
+
+  This function checks for the existence of preprocessed data files (movie features,
+  user features, and ratings) and generates them if they are missing. It ensures
+  that the required datasets are downloaded and processed into the appropriate formats.
+  """
+  links_path, _genometags_path, movies_path, _genomescores_path, tags_path, ratings_path, tmdb_path = (
     download_from_kaggle()
   )
 
