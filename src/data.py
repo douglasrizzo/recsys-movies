@@ -198,10 +198,6 @@ class UserItemDataModule(lightning.LightningDataModule):
         The number of workers to use for training. The default is `cpu_count() - 1`.
     val_workers : int, optional
         The number of workers to use for validation. The default is `cpu_count() - 1`.
-
-    Returns
-    -------
-    None
     """
     super().__init__()
     self.items_path = items_path

@@ -133,14 +133,18 @@ class TwoTowerNetwork(lightning.LightningModule):
     return user_embedding @ item_embedding.T
 
   def compute_loss(self, batch: tuple[torch.Tensor, torch.Tensor, torch.Tensor]) -> torch.Tensor:
-    """Compute the loss for the given batch.
+    """
+    Compute the loss for the given batch.
 
-    Args:
-        batch: A tuple of three tensors: user features, item features, and ratings.
+    Parameters
+    ----------
+    batch : tuple of torch.Tensor
+        A tuple containing three tensors: user features, item features, and ratings.
 
     Returns
     -------
-        torch.Tensor: The loss for the current batch.
+    torch.Tensor
+        The loss for the current batch.
     """
     user_features, item_features, rating = batch
     y_hat = self.forward(user_features, item_features)

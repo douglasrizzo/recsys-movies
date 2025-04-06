@@ -18,10 +18,16 @@ from models import TwoTowerNetwork
 
 
 class MyCustomCallback(Callback):
-  def on_train_epoch_end(self, *args, **kwargs) -> None:
+  """A custom callback to perform garbage collection at the end of training and validation epochs."""
+
+  @staticmethod
+  def on_train_epoch_end() -> None:
+    """Perform garbage collection at the end of a training epoch."""
     gc.collect()
 
-  def on_validation_epoch_end(self, *args, **kwargs) -> None:
+  @staticmethod
+  def on_validation_epoch_end() -> None:
+    """Perform garbage collection at the end of a validation epoch."""
     gc.collect()
 
 

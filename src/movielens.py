@@ -25,14 +25,22 @@ def download_from_kaggle() -> tuple[pl.Path, pl.Path, pl.Path, pl.Path, pl.Path,
 
 
 def downcast(df: pd.DataFrame) -> pd.DataFrame | None:
-  """Downcast the numerical columns of a pandas DataFrame for minimal memory usage.
+  """
+  Downcast numerical columns of a pandas DataFrame to reduce memory usage.
 
   This function iterates over all numerical columns in the DataFrame and attempts
   to downcast them to the smallest possible numeric type. It handles both integer
   and float types, reducing memory footprint without altering data.
 
-  :param df: Input DataFrame with numerical columns to be downcasted.
-  :return: DataFrame with downcasted numerical columns.
+  Parameters
+  ----------
+  df : pandas.DataFrame
+      Input DataFrame with numerical columns to be downcasted.
+
+  Returns
+  -------
+  pandas.DataFrame
+      DataFrame with downcasted numerical columns.
   """
   for col in df.select_dtypes(include=["number"]).columns:
     df[col] = pd.to_numeric(df[col], downcast="integer" if pd.api.types.is_integer_dtype(df[col]) else "float")
